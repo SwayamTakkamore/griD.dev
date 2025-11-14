@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+  color: #1f2328;
+}
+
+/* GitHub button styles */
+@layer components {
+  .btn-gh-primary {
+    @apply bg-[#1f883d] hover:bg-[#1a7f37] text-white font-medium px-4 py-1.5 rounded-gh border border-[rgba(27,31,36,0.15)] shadow-gh transition-all duration-75 text-sm;
+  }
+  
+  .btn-gh-secondary {
+    @apply bg-gh-canvas-subtle hover:bg-gh-neutral-muted text-gh-fg-default font-medium px-4 py-1.5 rounded-gh border border-gh-border-default shadow-gh transition-all duration-75 text-sm;
+  }
+  
+  .btn-gh-danger {
+    @apply bg-[#cf222e] hover:bg-[#a40e26] text-white font-medium px-4 py-1.5 rounded-gh border border-[rgba(27,31,36,0.15)] shadow-gh transition-all duration-75 text-sm;
+  }
+
+  .input-gh {
+    @apply bg-gh-canvas-default border border-gh-border-default rounded-gh px-3 py-1.5 text-sm focus:border-gh-accent-fg focus:ring-2 focus:ring-gh-accent-muted outline-none transition-all;
+  }
+
+  .card-gh {
+    @apply bg-gh-canvas-default border border-gh-border-default rounded-gh shadow-gh hover:shadow-gh-md transition-all;
+  }
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
