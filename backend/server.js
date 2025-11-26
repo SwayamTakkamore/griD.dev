@@ -49,20 +49,31 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// File upload middleware
-app.use(fileUpload({
+// File upload middleware configuration (not applied globally to avoid conflict with multer)
+const fileUploadMiddleware = fileUpload({
   createParentPath: true,
   limits: { 
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 52428800 // 50MB default
   },
   abortOnLimit: true,
   responseOnLimit: 'File size exceeds the maximum allowed limit',
-}));
+});
 
 // API Routes
 app.use('/api/auth', require('./src/routes/auth'));
-app.use('/api/repo', require('./src/routes/repo'));
+app.use('/api/repo', fileUploadMiddleware, require('./src/routes/repo')); // Apply fileUpload only to old repo routes
 app.use('/api/user', require('./src/routes/user'));
+
+// New encryption routes (loaded dynamically to handle TypeScript)
+try {
+  require('ts-node/register');
+  const tsRoutes = require('./src/routes/encryptedRepo');
+  app.use('/api', tsRoutes);
+  console.log('✅ Encrypted repository routes loaded');
+} catch (error) {
+  console.warn('⚠️  Could not load encrypted routes. Install ts-node or compile TypeScript files.');
+  console.warn('   Run: npm install --save-dev ts-node');
+}
 
 // Health check endpoint
 app.get('/health', (req, res) => {

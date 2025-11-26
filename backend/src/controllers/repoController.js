@@ -6,6 +6,15 @@ const storyService = require('../services/storyService');
 const fs = require('fs');
 const path = require('path');
 
+// Import new encrypted Repo model (if available)
+let Repo;
+try {
+  require('ts-node/register');
+  Repo = require('../models/Repo.ts').default;
+} catch (error) {
+  console.warn('⚠️  Encrypted Repo model not available');
+}
+
 // @desc    Create new repository
 // @route   POST /api/repo/create
 // @access  Private
@@ -126,9 +135,19 @@ exports.getRepository = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const repository = await Repository.findOne({ repoId: id })
+    // Try old Repository model first
+    let repository = await Repository.findOne({ repoId: id })
       .populate('commits')
-      .populate('ownerRef', 'walletAddress username avatar');
+      .populate('ownerRef', 'walletAddress username avatar')
+      .lean();
+
+    // If not found, try new Repo model
+    if (!repository && Repo) {
+      repository = await Repo.findOne({ repoId: id }).lean();
+      if (repository) {
+        repository.source = 'new';
+      }
+    }
 
     if (!repository) {
       return res.status(404).json({
@@ -156,15 +175,32 @@ exports.getRepository = async (req, res) => {
 exports.getUserRepositories = async (req, res) => {
   try {
     const { wallet } = req.params;
+    const walletLower = wallet.toLowerCase();
 
-    const repositories = await Repository.find({ 
-      owner: wallet.toLowerCase() 
-    }).sort({ createdAt: -1 });
+    // Query both old Repository and new Repo collections
+    const [oldRepos, newRepos] = await Promise.all([
+      Repository.find({ owner: walletLower }).sort({ createdAt: -1 }).lean(),
+      Repo ? Repo.find({ 
+        $or: [
+          { owner: walletLower },
+          { ownerWallet: walletLower }
+        ]
+      }).sort({ createdAt: -1 }).lean() : Promise.resolve([])
+    ]);
+
+    // Merge results
+    const allRepositories = [
+      ...oldRepos.map(repo => ({ ...repo, _id: repo._id.toString(), source: 'old' })),
+      ...newRepos.map(repo => ({ ...repo, _id: repo._id.toString(), source: 'new' }))
+    ];
+
+    // Sort by creation date
+    allRepositories.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
     res.status(200).json({
       success: true,
-      count: repositories.length,
-      repositories,
+      count: allRepositories.length,
+      repositories: allRepositories,
     });
   } catch (error) {
     console.error('Get user repositories error:', error);
@@ -298,20 +334,58 @@ exports.getAllRepositories = async (req, res) => {
       query.licenseType = license;
     }
 
-    const repositories = await Repository.find(query)
-      .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .populate('ownerRef', 'walletAddress username avatar');
+    // Query both old Repository and new Repo collections
+    const [oldRepos, newRepos] = await Promise.all([
+      Repository.find(query)
+        .sort({ createdAt: -1 })
+        .populate('ownerRef', 'walletAddress username avatar')
+        .lean(),
+      Repo ? Repo.find(license ? { licenseType: license } : {})
+        .sort({ createdAt: -1 })
+        .lean() : Promise.resolve([])
+    ]);
 
-    const count = await Repository.countDocuments(query);
+    // Merge and normalize the results
+    let allRepositories = [
+      ...oldRepos.map(repo => ({
+        ...repo,
+        _id: repo._id.toString(),
+        source: 'old'
+      })),
+      ...newRepos.map(repo => ({
+        ...repo,
+        _id: repo._id.toString(),
+        isPublic: true, // Encrypted repos are queryable by metadata
+        source: 'new'
+      }))
+    ];
+
+    // Apply search filter to new repos (since they don't have isPublic field)
+    if (search) {
+      allRepositories = allRepositories.filter(repo => {
+        if (repo.source === 'old') return true; // Already filtered by query
+        const searchLower = search.toLowerCase();
+        return (
+          repo.title?.toLowerCase().includes(searchLower) ||
+          repo.description?.toLowerCase().includes(searchLower) ||
+          repo.tags?.some(tag => tag.toLowerCase().includes(searchLower))
+        );
+      });
+    }
+
+    // Sort by creation date
+    allRepositories.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    // Apply pagination
+    const count = allRepositories.length;
+    const paginatedRepos = allRepositories.slice((page - 1) * limit, page * limit);
 
     res.status(200).json({
       success: true,
       count,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
-      repositories,
+      repositories: paginatedRepos,
     });
   } catch (error) {
     console.error('Get all repositories error:', error);

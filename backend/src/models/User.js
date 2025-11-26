@@ -37,6 +37,17 @@ const UserSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  // Cache metadata - MongoDB is ONLY a cache for user profiles
+  lastSyncedAt: {
+    type: Date,
+    default: Date.now,
+    index: { expires: '30d' }, // TTL: Auto-delete after 30 days
+  },
+  cacheSource: {
+    type: String,
+    enum: ['blockchain', 'manual', 'ipfs'],
+    default: 'manual',
+  },
   createdAt: {
     type: Date,
     default: Date.now,

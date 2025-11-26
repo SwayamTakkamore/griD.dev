@@ -2,12 +2,10 @@ import { useState, useCallback } from 'react';
 import { apiClient } from '@/lib/api';
 import { Repository } from '@/types';
 import toast from 'react-hot-toast';
-import { useRepositoryContract } from './useRepositoryContract';
 
 export const useRepository = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { createRepositoryOnChain } = useRepositoryContract();
 
   // Create repository
   const createRepository = useCallback(async (data: {
@@ -16,18 +14,31 @@ export const useRepository = () => {
     licenseType: string;
     tags: string;
     file: File;
+    priceEth?: string;
+    thumbnailUrl?: string;
+    licenseTemplates?: Array<{ name: string; priceEth: string; description: string }>;
   }) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Step 1: Upload to IPFS and create in MongoDB (via backend)
+      // Upload to IPFS and create in MongoDB (via backend)
       const formData = new FormData();
       formData.append('title', data.title);
       formData.append('description', data.description);
       formData.append('licenseType', data.licenseType);
       formData.append('tags', data.tags);
       formData.append('file', data.file);
+      
+      if (data.priceEth) {
+        formData.append('priceEth', data.priceEth);
+      }
+      if (data.thumbnailUrl) {
+        formData.append('thumbnailUrl', data.thumbnailUrl);
+      }
+      if (data.licenseTemplates) {
+        formData.append('licenseTemplates', JSON.stringify(data.licenseTemplates));
+      }
 
       const response: any = await apiClient.createRepository(formData);
 
@@ -36,23 +47,6 @@ export const useRepository = () => {
       }
 
       const repository = response.repository;
-
-      // Step 2: Register on blockchain (user signs with MetaMask)
-      try {
-        toast.loading('Creating repository on blockchain...', { id: 'blockchain' });
-        
-        await createRepositoryOnChain(
-          repository.repoId,
-          repository.ipfsCid,
-          repository.ipAssetId || ''
-        );
-        
-        toast.success('Repository created on blockchain!', { id: 'blockchain' });
-      } catch (blockchainError: any) {
-        // Don't fail if blockchain registration fails - data is already in MongoDB
-        console.warn('Blockchain registration failed:', blockchainError);
-        toast.error('Repository created in database, but blockchain registration failed. You can try again later.', { id: 'blockchain' });
-      }
 
       toast.success('Repository created successfully!');
       return repository;
@@ -65,7 +59,7 @@ export const useRepository = () => {
     } finally {
       setLoading(false);
     }
-  }, [createRepositoryOnChain]);
+  }, []);
 
   // Get repository
   const getRepository = useCallback(async (repoId: string) => {

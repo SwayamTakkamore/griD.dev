@@ -5,12 +5,15 @@ import { useRepository } from '@/hooks/useRepository';
 import RepoCard from '@/components/RepoCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Repository } from '@/types';
+import { PixelGem, PixelStar, PixelDivider } from '@/components/PixelDecor';
 
 export default function ProfilePage() {
   const router = useRouter();
   const { address } = router.query;
   const { getUserRepositories, loading } = useRepository();
   const [repositories, setRepositories] = useState<Repository[]>([]);
+  const [bio, setBio] = useState('⛏️ Mining the deepest caves for legendary code artifacts...');
+  const [isEditingBio, setIsEditingBio] = useState(false);
 
   useEffect(() => {
     if (address && typeof address === 'string') {
@@ -41,53 +44,159 @@ export default function ProfilePage() {
         <title>{address ? formatAddress(address as string) : 'Profile'} - griD</title>
       </Head>
 
-      <div className="bg-gh-canvas-default min-h-screen">
-        <div className="max-w-[1280px] mx-auto px-4 py-8">
-          {/* Profile Header */}
-          <div className="mb-6">
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-16 h-16 rounded-full bg-[#0969da] flex items-center justify-center text-white text-2xl font-bold">
-                {address?.[2]?.toUpperCase() || 'U'}
+      <div className="min-h-screen py-12">
+        <div className="max-w-[1280px] mx-auto px-4">
+          {/* Profile Header - Character Card Style */}
+          <div className="card-gh p-6 mb-6">
+            <div className="flex items-start gap-4 mb-6">
+              {/* Character Portrait */}
+              <div className="w-16 h-16 border-4 border-accent-fg bg-accent-muted flex items-center justify-center shadow-gh flex-shrink-0">
+                <span className="text-3xl font-pixel text-accent-emphasis">
+                  {address?.[2]?.toUpperCase() || 'U'}
+                </span>
               </div>
-              <div>
-                <h1 className="text-2xl font-semibold text-gh-fg-default">
-                  {address ? formatAddress(address as string) : 'Unknown User'}
-                </h1>
-                <p className="text-gh-fg-muted text-sm font-mono">{address}</p>
+              
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <h1 className="text-2xl font-pixel text-accent-fg uppercase tracking-wider">
+                    CODE MINER
+                  </h1>
+                  <PixelStar />
+                  <div className="pixel-badge bg-success-fg text-canvas-default text-sm">
+                    LVL {repositories.length + 1}
+                  </div>
+                </div>
+                
+                {/* XP Bar */}
+                <div className="flex items-center gap-2 mb-3">
+                  <PixelGem color="#00e5cc" />
+                  <div className="flex-1 h-3 border-2 border-accent-fg bg-canvas-inset">
+                    <div className="h-full bg-accent-fg" style={{ width: `${Math.min((repositories.length * 20) + 15, 100)}%` }}></div>
+                  </div>
+                  <span className="text-sm font-pixel text-accent-fg">{repositories.length * 20 + 15} XP</span>
+                </div>
+
+                <p className="text-base font-retro text-fg-muted">
+                  ⛏️ Mining the deepest caves for legendary code artifacts...
+                </p>
               </div>
             </div>
-            <div className="flex gap-6 text-sm">
-              <span className="text-gh-fg-muted">
-                <svg className="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"></path>
-                </svg>
-                <strong className="text-gh-fg-default">{repositories.length}</strong> repositories
-              </span>
+
+            {/* Profile Stats Grid - Compact Inventory Slots */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              {/* Wallet Address Slot */}
+              <div className="md:col-span-2 border-4 border-attention-fg p-3 bg-canvas-subtle hover:border-attention-emphasis transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 border-2 border-attention-fg bg-canvas-inset flex items-center justify-center">
+                    <span className="text-lg">👛</span>
+                  </div>
+                  <span className="text-sm font-pixel text-attention-fg uppercase">WALLET ID</span>
+                </div>
+                <p className="text-xs font-retro text-fg-muted break-all leading-relaxed">
+                  {address}
+                </p>
+              </div>
+
+              {/* Repos Owned Slot */}
+              <div className="border-4 border-success-fg p-3 bg-canvas-subtle hover:border-success-emphasis transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 border-2 border-success-fg bg-canvas-inset flex items-center justify-center">
+                    <span className="text-lg">📦</span>
+                  </div>
+                  <span className="text-sm font-pixel text-success-fg uppercase">VAULTS</span>
+                </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-3xl font-pixel text-success-fg">{repositories.length}</span>
+                  <span className="text-sm font-retro text-fg-muted">OWNED</span>
+                </div>
+              </div>
+
+              {/* Member Since Slot */}
+              <div className="border-4 border-accent-fg p-3 bg-canvas-subtle hover:border-accent-emphasis transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-8 h-8 border-2 border-accent-fg bg-canvas-inset flex items-center justify-center">
+                    <span className="text-lg">📅</span>
+                  </div>
+                  <span className="text-sm font-pixel text-accent-fg uppercase">JOINED</span>
+                </div>
+                <p className="text-base font-pixel text-accent-fg leading-tight">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }).toUpperCase()}
+                </p>
+              </div>
+            </div>
+
+            {/* Bio Section - Editable */}
+            <div className="mt-4 p-4 border-4 border-canvas-inset bg-canvas-inset">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">📜</span>
+                  <span className="text-sm font-pixel text-fg-default uppercase">MINER'S LOG</span>
+                </div>
+                <button
+                  onClick={() => setIsEditingBio(!isEditingBio)}
+                  className="px-3 py-1 border-2 border-accent-fg bg-canvas-default hover:bg-accent-subtle text-xs font-pixel text-accent-fg uppercase transition-colors"
+                >
+                  {isEditingBio ? '💾 SAVE' : '✏️ EDIT'}
+                </button>
+              </div>
+              {isEditingBio ? (
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  className="input-gh w-full text-base font-retro resize-none"
+                  rows={4}
+                  maxLength={300}
+                  placeholder="Write your miner's story..."
+                />
+              ) : (
+                <p className="text-base font-retro text-fg-muted leading-relaxed">
+                  {bio}
+                </p>
+              )}
+              {isEditingBio && (
+                <p className="text-xs font-retro text-fg-muted mt-2 text-right">
+                  {bio.length}/300 characters
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Repositories Section */}
-          <div className="border-t border-gh-border-default pt-6">
-            <h2 className="text-base font-semibold text-gh-fg-default mb-4">
-              Repositories
-            </h2>
+          {/* Repositories Section - Treasure Vault */}
+          <div className="card-gh p-4">
+            <div className="flex items-center gap-3 mb-4">
+              <PixelGem color="#ffd700" />
+              <h2 className="text-2xl font-pixel text-attention-fg uppercase tracking-wider">
+                📦 TREASURE VAULT
+              </h2>
+              <PixelGem color="#ffd700" />
+              <span className="ml-auto text-base font-pixel text-fg-muted">
+                {repositories.length} VAULT{repositories.length !== 1 ? 'S' : ''}
+              </span>
+            </div>
 
             {repositories.length === 0 ? (
-              <div className="card-gh p-12 text-center">
-                <svg className="w-16 h-16 mx-auto mb-4 text-gh-fg-muted" fill="currentColor" viewBox="0 0 16 16">
-                  <path d="M2 2.5A2.5 2.5 0 0 1 4.5 0h8.75a.75.75 0 0 1 .75.75v12.5a.75.75 0 0 1-.75.75h-2.5a.75.75 0 0 1 0-1.5h1.75v-2h-8a1 1 0 0 0-.714 1.7.75.75 0 1 1-1.072 1.05A2.495 2.495 0 0 1 2 11.5Zm10.5-1h-8a1 1 0 0 0-1 1v6.708A2.486 2.486 0 0 1 4.5 9h8ZM5 12.25a.25.25 0 0 1 .25-.25h3.5a.25.25 0 0 1 .25.25v3.25a.25.25 0 0 1-.4.2l-1.45-1.087a.249.249 0 0 0-.3 0L5.4 15.7a.25.25 0 0 1-.4-.2Z"></path>
-                </svg>
-                <h3 className="text-xl font-semibold text-gh-fg-default mb-2">
-                  No repositories yet
+              <div className="border-4 border-fg-muted p-12 text-center bg-canvas-subtle">
+                {/* Empty Chest */}
+                <div className="w-24 h-24 mx-auto mb-6 opacity-20">
+                  <svg viewBox="0 0 64 64">
+                    <rect x="8" y="20" width="48" height="32" fill="#8b7355" stroke="#000" strokeWidth="2"/>
+                    <rect x="12" y="24" width="40" height="24" fill="#a0826d" stroke="#000" strokeWidth="2"/>
+                    <rect x="28" y="32" width="8" height="8" fill="#666" stroke="#000" strokeWidth="2"/>
+                    <rect x="0" y="16" width="64" height="4" fill="#6b5345"/>
+                    <rect x="0" y="52" width="64" height="4" fill="#6b5345"/>
+                  </svg>
+                </div>
+                <h3 className="text-xl font-pixel text-fg-muted mb-3 uppercase tracking-wider">
+                  EMPTY VAULT
                 </h3>
-                <p className="text-gh-fg-muted text-sm">
-                  This user hasn't created any repositories
+                <p className="text-lg font-retro text-fg-muted">
+                  No treasures collected yet...
                 </p>
               </div>
             ) : (
-              <div className="card-gh">
+              <div className="space-y-4">
                 {repositories.map((repo, index) => (
-                  <div key={repo._id} className={index !== 0 ? 'border-t border-gh-border-default' : ''}>
+                  <div key={repo._id}>
                     <RepoCard repo={repo} />
                   </div>
                 ))}

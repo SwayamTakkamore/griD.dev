@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRepository } from '@/hooks/useRepository';
 import RepoCard from '@/components/RepoCard';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import BuyLicenseModal from '@/components/BuyLicenseModal';
 import { Repository } from '@/types';
 
 export default function Explore() {
@@ -12,6 +13,8 @@ export default function Explore() {
   const [selectedLicense, setSelectedLicense] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
+  const [showBuyModal, setShowBuyModal] = useState(false);
 
   useEffect(() => {
     loadRepositories();
@@ -32,6 +35,16 @@ export default function Explore() {
     e.preventDefault();
     setPage(1);
     loadRepositories();
+  };
+
+  const handleBuy = (repo: Repository) => {
+    setSelectedRepo(repo);
+    setShowBuyModal(true);
+  };
+
+  const handleRequestAccess = async (repo: Repository) => {
+    // TODO: Implement request access API
+    alert(`Request access for ${repo.title} - Coming soon`);
   };
 
   return (
@@ -108,7 +121,7 @@ export default function Explore() {
                 </div>
                 {repositories.map((repo, index) => (
                   <div key={repo._id} className={index !== 0 ? 'border-t border-gh-border-default' : ''}>
-                    <RepoCard repo={repo} />
+                    <RepoCard repo={repo} onBuy={handleBuy} onRequestAccess={handleRequestAccess} />
                   </div>
                 ))}
               </div>
@@ -139,6 +152,28 @@ export default function Explore() {
           )}
         </div>
       </div>
+
+      {/* Buy License Modal */}
+      {showBuyModal && selectedRepo && (
+        <BuyLicenseModal
+          repoId={selectedRepo._id}
+          templates={[
+            {
+              id: '0',
+              name: 'Standard License',
+              description: 'Full access to code and updates',
+              priceWei: '1000000000000000000', // 1 ETH
+              terms: {}
+            }
+          ]}
+          onClose={() => setShowBuyModal(false)}
+          onSuccess={(licenseId) => {
+            console.log('License purchased:', licenseId);
+            setShowBuyModal(false);
+            alert('License purchased successfully! You can now access the code.');
+          }}
+        />
+      )}
     </>
   );
 }

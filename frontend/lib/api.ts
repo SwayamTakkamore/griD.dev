@@ -13,15 +13,18 @@ class ApiClient {
       },
     });
 
-    // Request interceptor to add auth token
+    // Request interceptor to add auth token and wallet address
     this.client.interceptors.request.use(
       (config) => {
         if (typeof window !== 'undefined') {
           const authStorage = localStorage.getItem('auth-storage');
           if (authStorage) {
-            const { token } = JSON.parse(authStorage).state;
+            const { token, user } = JSON.parse(authStorage).state;
             if (token) {
               config.headers.Authorization = `Bearer ${token}`;
+            }
+            if (user?.walletAddress) {
+              config.headers['x-wallet'] = user.walletAddress;
             }
           }
         }
@@ -34,8 +37,8 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
-        if (error.response?.status === 401) {
-          // Token expired or invalid
+        // Only logout on 401 if it's from the auth endpoints
+        if (error.response?.status === 401 && error.config?.url?.includes('/auth/')) {
           if (typeof window !== 'undefined') {
             localStorage.removeItem('auth-storage');
             window.location.href = '/';
@@ -86,7 +89,7 @@ class ApiClient {
 
   // Repository endpoints
   async createRepository(formData: FormData) {
-    return this.post('/repo/create', formData, {
+    return this.post('/uploads', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

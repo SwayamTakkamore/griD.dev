@@ -91,6 +91,21 @@ const RepositorySchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
+  // Cache metadata - MongoDB is ONLY a cache
+  lastSyncedAt: {
+    type: Date,
+    default: Date.now,
+    index: { expires: '30d' }, // TTL: Auto-delete after 30 days
+  },
+  cacheSource: {
+    type: String,
+    enum: ['blockchain', 'manual', 'sync'],
+    default: 'manual',
+  },
+  blockchainVerified: {
+    type: Boolean,
+    default: false,
+  },
   createdAt: {
     type: Date,
     default: Date.now,
